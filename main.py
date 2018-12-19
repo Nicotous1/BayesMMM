@@ -2,38 +2,32 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt   
 
-from MCMC import FetalChain, MCMC
+from MCMC import PoissonMixtureMarkov, MCMC
        
 
 # Fetal dataset
 Y = pd.read_csv("data/lamb.csv", index_col = 0).values.flatten()
 
 # Priors
-alpha = np.array([(3,1), (0.5,0.5)]) # Prior to generate P
-theta = np.array([(1,2), (2,1)]) # Prior to generate lambdas (a,b)
+alpha = [(3,1), (0.5,0.5)] # Prior to generate P
+theta = [(1,2), (2,1)] # Prior to generate lambdas (a,b)
 
 # Init the model
-model = FetalChain(alpha, theta)
+model = PoissonMixtureMarkov(alpha, theta)
 
 # Set the exact priors of the example
-lambdas = np.array([0.256, 3.101])
-P = np.array([(0.984, 0.016), (0.308, 0.692)])
+lambdas = [0.256, 3.101]
+P = [(0.984, 0.016),
+     (0.308, 0.692)]
 model.set_priors(P, lambdas)
 
 # Running MCMC (take some time)
-F, S = MCMC(model, Y, N = 6000, N_rejected = 200)
-
+F, S = MCMC(model, Y, N = 20, N_rejected = 10)
 
 
 # Computing stats
 history = model.get_history()
-stats = {}
-stats["Mean"] = np.mean(history, axis = 0).round(3).flatten()
-stats["Std"] = np.std(history, axis = 0).round(3).flatten()
-stats["Min"] = np.min(history, axis = 0).round(3).flatten()
-stats["Max"] = np.max(history, axis = 0).round(3).flatten()
-stats = pd.DataFrame.from_dict(stats, orient="columns")
-print(stats)
+print(history.describe())
 
 # Plotting final probabilities
 n = len(F)    

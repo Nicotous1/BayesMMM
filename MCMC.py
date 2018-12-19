@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from scipy.stats import poisson
 
 class MarkovChain(object):
@@ -9,8 +10,8 @@ class MarkovChain(object):
     
     def __init__(self, alpha, theta):
         # Base parameters
-        self.alpha = alpha # Priors for the dirichlet of P
-        self.theta = theta # Priors for thetha (depends of the child model)
+        self.alpha = np.array(alpha) # Priors for the dirichlet of P
+        self.theta = np.array(theta) # Priors for thetha (depends of the child model)
         
         # Computing parameters
         self.history = [] # Stock the history of parameters (usefull for stats)
@@ -50,7 +51,7 @@ class MarkovChain(object):
         return Dt
     
     def get_history(self):
-        return np.array(self.history)
+        return pd.DataFrame(self.history, columns = self.get_params(name = True))
     
     def save(self):
         params = self.get_params()
@@ -69,14 +70,14 @@ class MarkovChain(object):
     def generate_theta_MCMC(self, Y = None, S = None):
         raise ValueError("This function should be implemented by the child class !")
     
-    def get_params(self):
+    def get_params(self, name = False):
         raise ValueError("This function should be implemented by the child class !")
         
         
         
         
         
-class FetalChain(MarkovChain):        
+class PoissonMixtureMarkov(MarkovChain):        
         
     def f(self, Y, t, st):
         return poisson.pmf(Y[t], self.lambdas[st])
@@ -96,12 +97,15 @@ class FetalChain(MarkovChain):
             b = self.theta[k, 1] + k_selector.sum()
             self.lambdas[k] = np.random.gamma(a,1/b, 1)
     
-    def get_params(self):
-        return np.column_stack((self.lambdas, np.diag(self.P))).flatten()
+    def get_params(self, name = False):
+        if name:
+            return ["lambda{}".format(i) for i in range(self.P.shape[0])] + ["p{}".format(i) for i in range(self.P.shape[0])] # Name of the parameters
+        else:
+            return np.column_stack((self.lambdas, np.diag(self.P))).flatten() # Parameters values
     
     def set_priors(self, P, lambdas):
-        self.P = P
-        self.lambdas = lambdas
+        self.P = np.array(P)
+        self.lambdas = np.array(lambdas)
         self.has_priors = True
     
     
